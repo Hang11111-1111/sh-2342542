@@ -1,0 +1,45 @@
+name: 水果店3km监控·每10分钟
+
+on:
+  schedule:
+    # 每 10 分钟运行一次（GitHub Actions 的 cron 使用 UTC 时间，仍等价于"每10分钟"）
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}   # 允许在 Actions 页面手动触发测试
+
+permissions:
+  contents: write        # 需要写权限，以便把 baseline 提交回仓库（跨次持久化变动检测）
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout（拉取上一轮提交的 baseline）
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Playwright + Chromium
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Run monitor（云端无头模式 + 注入饿了么 cookie）
+        env:
+          HEADLESS: "1"
+          ELEME_COOKIES: ${{ secrets.ELEME_COOKIES }}
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+        run: python fruit_monitor_core.py
+
+      - name: 把 baseline 提交回仓库（供下一轮对比，避免每次都报"新店"）
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add history/fruit_baseline.json
+          git diff --cached --quiet || git commit -m "chore: update baseline [skip ci]"
+          git push
