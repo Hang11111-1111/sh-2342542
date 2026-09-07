@@ -1,7 +1,7 @@
 # 花屿观澜里 · 3km 水果店云端监控
 
 每 10 分钟自动抓取「杭州萧山·花屿观澜里附近 3km 内水果店」的店铺与 SKU，对比上一轮识别
-**价格涨跌 / 上架下架 / 新店开张**，通过 **pushplus** 推送到你的微信。
+**价格涨跌 / 上架下架 / 新店开张**，通过 **SMTP 邮件**推送到你的邮箱（默认 `1478363@qq.com`）。
 
 整套跑在 **GitHub Actions 云端**，不依赖你本机是否开机、WorkBuddy 是否运行。
 
@@ -17,7 +17,7 @@
 │   3. 打开 h5.ele.me 水果搜索页(已定位花屿观澜里)             │
 │   4. 滚动分页抓取 3km 内水果店 + SKU                         │
 │   5. 与历史 baseline 对比变动                                │
-│   6. pushplus 推送微信  ──►  你的微信                        │
+│   6. SMTP 邮件推送      ──►  你的邮箱(1478363@qq.com)       │
 │   7. 把新 baseline 提交回仓库(供下一轮对比)                  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -47,16 +47,20 @@ git remote add origin https://github.com/<你的用户名>/fruit-monitor-3km.git
 git push -u origin main
 ```
 
-### 3. 配置两个 Secrets
+### 3. 配置 Secrets
 仓库 `Settings → Secrets and variables → Actions → New repository secret`：
 
 | Name | 内容 |
 |------|------|
-| `PUSHPLUS_TOKEN` | pushplus 的 token（你已有一个：`a4b4bacfd0544983b604f36539450211`，一般无需改） |
-| `ELEME_COOKIES`  | 饿了么登录 cookie 的 **JSON 数组全文**（见下） |
+| `ELEME_COOKIES` | 饿了么登录 cookie 的 **JSON 数组全文**（见下） |
+| `SMTP_HOST` | `smtp.qq.com` |
+| `SMTP_PORT` | `465` |
+| `SMTP_USER` | 发件邮箱，如 `1478363@qq.com` |
+| `SMTP_PASS` | 该邮箱的 **SMTP 授权码**（QQ邮箱「设置-账户」开启 SMTP 后生成，不是登录密码） |
+| `MAIL_TO`   | 收件邮箱，如 `1478363@qq.com` |
 
 ### 4. 手动触发验证
-`Actions → 水果店3km监控·每10分钟 → Run workflow`，看日志是否 `PUSH OK`，微信是否收到 `【SG-F3K】`。
+`Actions → 水果店3km监控·每10分钟 → Run workflow`，看日志是否 `邮件已发送`，邮箱是否收到 `【SG-F3K】`。
 
 ---
 
@@ -82,7 +86,8 @@ python fruit_monitor_core.py
 
 # 云端模式模拟(需先有 eleme_cookies.json):
 HEADLESS=1 ELEME_COOKIES="$(cat eleme_cookies.json)" \
-  PUSHPLUS_TOKEN=xxxx python fruit_monitor_core.py
+  SMTP_HOST=smtp.qq.com SMTP_PORT=465 SMTP_USER=1478363@qq.com \
+  SMTP_PASS=你的授权码 MAIL_TO=1478363@qq.com python fruit_monitor_core.py
 ```
 
 ---
