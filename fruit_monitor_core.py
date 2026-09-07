@@ -7,7 +7,7 @@
   1) scrape()      —— 连常驻Chrome(CDP 9222)→滚屏→抓 店[名称/距离/时效/评分/月售/SKU[]]
   2) diff(prev,new)—— 逐店逐SKU对比, 产出价格变动/上下架/店铺增删
   3) build_message —— 构造微信正文
-  4) push          —— pushplus推送到微信
+  4) push          —— 邮件推送(SMTP → 1478363@qq.com)
   5) main          —— 单次闭环: 抓→对比→存history→推
 
 设计要点:
@@ -63,7 +63,7 @@ MAX_ETA_MIN = int(os.environ.get("MAX_ETA_MIN", "20"))       # distM 缺失时�
 NONFRUIT_RE = re.compile(r"(便利店|超市|便利|商城|药店|百货|罗森|全家|联华|十足|菜市场|市集|百世|美宜佳|天猫|小店|杂货|批发|甜品|水牛奶|奶茶|咖啡|烘焙|炸鸡|快餐|火锅|烧烤|熟食|酸奶|YOGURT|yogurt)")
 
 sys.path.insert(0, HERE)
-from pushplus_push import push  # noqa
+from mail_push import push  # noqa
 
 
 # ---------- 监控范围过滤 ----------
@@ -774,7 +774,7 @@ def run_once(push_msg=True, use_prev=True):
     meta = "花屿观澜里附近3km"
     content = build_message(new_shops, changes, stat, meta)
 
-    # 存完整数据(本地存档, 永不丢失; 即使 pushplus 超长被截断也不丢)。raw=全量, filtered=监控目标
+    # 存完整数据(本地存档, 永不丢失; 即使单条超长被截断也不丢)。raw=全量, filtered=监控目标
     full_path = os.path.join(HIST, f"fruit_full_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
     try:
         with open(full_path, "w", encoding="utf-8") as f:
@@ -804,7 +804,7 @@ def run_once(push_msg=True, use_prev=True):
             ok, det = push(token, seg_title, seg_content, template="txt")
             print(("PUSH OK: " if ok else "PUSH FAIL: ") + det)
             if total > 1:
-                time.sleep(2.0)  # 多段之间留间隔, 避免 pushplus 频率限制 (code=999)
+                time.sleep(2.0)  # 多段之间留间隔, 避免频率限制
     else:
         print("push_msg=False, skip push")
     return True, content, stat
