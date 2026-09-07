@@ -5,5 +5,8 @@ __pycache__/
 # 本地抽出的饿了么 cookie（含登录态，严禁提交！）
 eleme_cookies.json
 
+# 本地 SMTP 凭据（含邮箱授权码，严禁提交！）
+.smtp_env
+
 # 每次抓取的全量存档（体积大、无需入库，仅 baseline 需要持久化）
 history/fruit_full_*.json
